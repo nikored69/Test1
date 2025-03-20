@@ -201,7 +201,7 @@ def draw():
         ctx.fillStyle = "#777777"
         ctx.fillRect(proj.x - 2, proj.y - 2, 4, 4)
         target = towers[1] if proj.dx > 0 else towers[0]
-        if (target["x"] - target["width"] // 2 <= proj.x <= target["x"] + target["width"] // 2 and
+        if (target["x"] - tower["width"] // 2 <= proj.x <= target["x"] + target["width"] // 2 and
             50 <= proj.y <= 50 + target["height"]):
             target["hp"] -= proj.damage
             if proj.dx > 0:
