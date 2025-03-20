@@ -22,8 +22,8 @@
             gap: 20px;
         }
         .button {
-            width: 100px;
-            height: 80px;
+            width: 80px;
+            height: 60px;
             background-color: rgba(255, 255, 255, 0.8);
             border: 3px solid black;
             border-radius: 10px;
@@ -33,7 +33,7 @@
             justify-content: center;
             cursor: pointer;
             font-family: Arial, sans-serif;
-            font-size: 16px;
+            font-size: 14px;
         }
         .button:hover { background-color: rgba(255, 255, 255, 1); }
     </style>
@@ -46,15 +46,15 @@
     </div>
     <div id="controls">
         <div class="button" id="heal">
-            <span style="font-size: 40px;">❤️</span>
+            <span style="font-size: 30px;">❤️</span>
             <span>Лечение</span>
         </div>
         <div class="button" id="buy_cannon">
-            <span style="font-size: 40px;">🔫</span>
+            <span style="font-size: 30px;">🔫</span>
             <span>Пушка</span>
         </div>
         <div class="button" id="upgrade">
-            <span style="font-size: 40px;">⬆️⬆️</span>
+            <span style="font-size: 30px;">⬆️⬆️</span>
             <span>Улучшение</span>
         </div>
     </div>
@@ -70,30 +70,30 @@
         light.position.set(0, 10, 10);
         scene.add(light);
 
-        // Башни (цилиндры)
-        const towerGeometry = new THREE.CylinderGeometry(20, 20, 100, 32);
+        // Башни
+        const towerGeometry = new THREE.CylinderGeometry(15, 15, 60, 32);
         const playerTowerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
         const aiTowerMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
         const playerTower = new THREE.Mesh(towerGeometry, playerTowerMaterial);
         const aiTower = new THREE.Mesh(towerGeometry, aiTowerMaterial);
-        playerTower.position.set(-100, 50, 0);
-        aiTower.position.set(100, 50, 0);
+        playerTower.position.set(-50, 30, 0);
+        aiTower.position.set(50, 30, 0);
         scene.add(playerTower);
         scene.add(aiTower);
 
-        // Пушки (сферы)
-        const cannonGeometry = new THREE.SphereGeometry(10, 32, 32);
+        // Пушки
+        const cannonGeometry = new THREE.SphereGeometry(7, 32, 32);
         const cannons = {
             player: [{ mesh: new THREE.Mesh(cannonGeometry, new THREE.MeshPhongMaterial({ color: 0x006600 })), damage: 1, cooldown: 0, speed: 2 }],
             ai: [{ mesh: new THREE.Mesh(cannonGeometry, new THREE.MeshPhongMaterial({ color: 0x660000 })), damage: 1, cooldown: 0, speed: -2 }]
         };
-        cannons.player[0].mesh.position.set(-100, 20, 0);
-        cannons.ai[0].mesh.position.set(100, 20, 0);
+        cannons.player[0].mesh.position.set(-50, 15, 0);
+        cannons.ai[0].mesh.position.set(50, 15, 0);
         scene.add(cannons.player[0].mesh);
         scene.add(cannons.ai[0].mesh);
 
         // Ядра
-        const projectileGeometry = new THREE.SphereGeometry(5, 16, 16);
+        const projectileGeometry = new THREE.SphereGeometry(3, 16, 16);
         const projectiles = [];
 
         // Состояние игры
@@ -106,10 +106,10 @@
             healCost: 100
         };
 
-        // Камера
-        camera.position.z = 200;
-        camera.position.y = 100;
-        camera.lookAt(0, 50, 0);
+        // Камера (дальше от сцены)
+        camera.position.z = 180;  // Отодвинута дальше
+        camera.position.y = 80;   // Чуть выше для обзора
+        camera.lookAt(0, 30, 0);
 
         // Обновление интерфейса
         function updateInfo() {
@@ -139,7 +139,7 @@
                         cooldown: 0,
                         speed: 2
                     };
-                    newCannon.mesh.position.set(-100, 20 + cannons.player.length * 20, 0);
+                    newCannon.mesh.position.set(-50, 15 + cannons.player.length * 15, 0);
                     cannons.player.push(newCannon);
                     scene.add(newCannon.mesh);
                     gameState.gold[0] -= cost;
@@ -163,7 +163,7 @@
 
             // Золото (4 единицы в секунду)
             gameState.goldTimer += 1;
-            if (gameState.goldTimer >= 60) {  // 60 кадров ~ 1 секунда при 60 FPS
+            if (gameState.goldTimer >= 60) {
                 gameState.gold[0] += 4;
                 gameState.gold[1] += 4;
                 gameState.goldTimer = 0;
@@ -173,7 +173,7 @@
             [cannons.player, cannons.ai].forEach(playerCannons => {
                 playerCannons.forEach(cannon => {
                     cannon.cooldown += 1;
-                    if (cannon.cooldown >= 180) {  // 3 секунды (180 кадров при 60 FPS)
+                    if (cannon.cooldown >= 180) {
                         const proj = new THREE.Mesh(projectileGeometry, new THREE.MeshPhongMaterial({ color: cannon.mesh.material.color }));
                         proj.position.set(cannon.mesh.position.x, cannon.mesh.position.y, cannon.mesh.position.z);
                         projectiles.push({ mesh: proj, dx: cannon.speed, damage: cannon.damage });
@@ -188,7 +188,7 @@
                 proj.mesh.position.x += proj.dx;
                 const target = proj.dx > 0 ? aiTower : playerTower;
                 const targetPos = target.position;
-                if (Math.abs(proj.mesh.position.x - targetPos.x) < 25 && Math.abs(proj.mesh.position.y - targetPos.y) < 50) {
+                if (Math.abs(proj.mesh.position.x - targetPos.x) < 18 && Math.abs(proj.mesh.position.y - targetPos.y) < 30) {
                     const targetIndex = proj.dx > 0 ? 1 : 0;
                     gameState.towers[targetIndex].hp -= proj.damage;
                     if (proj.dx > 0) gameState.score += proj.damage;
@@ -197,7 +197,7 @@
                     if (gameState.towers[targetIndex].hp <= 0) {
                         gameState.gameOver = true;
                     }
-                } else if (proj.mesh.position.x < -200 || proj.mesh.position.x > 200) {
+                } else if (proj.mesh.position.x < -100 || proj.mesh.position.x > 100) {
                     scene.remove(proj.mesh);
                     projectiles.splice(index, 1);
                 }
@@ -215,7 +215,7 @@
                             cooldown: 0,
                             speed: -2
                         };
-                        newCannon.mesh.position.set(100, 20 + cannons.ai.length * 20, 0);
+                        newCannon.mesh.position.set(50, 15 + cannons.ai.length * 15, 0);
                         cannons.ai.push(newCannon);
                         scene.add(newCannon.mesh);
                         gameState.gold[1] -= cost;
