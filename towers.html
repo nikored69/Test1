@@ -22,13 +22,13 @@
     <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython_stdlib.js"></script>
 </head>
 <body onload="brython()">
-    <canvas id="gameCanvas" width="300" height="200"></canvas>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
     <div id="info">
         <p>Player: Gold: <span id="gold1">0</span> | HP: <span id="hp1">100</span> | Score: <span id="score1">0</span></p>
         <p>AI: Gold: <span id="gold2">0</span> | HP: <span id="hp2">100</span></p>
     </div>
     <div id="controls">
-        <p>Controls:</p>
+        <p>Touch buttons: C - Shoot, H - Heal (100g = 50hp), P - Buy Cannon (100/200/300g), U - Upgrade (150g)</p>
     </div>
     <script type="text/python">
 from browser import document, window, timer
@@ -39,15 +39,13 @@ ctx = canvas.getContext("2d")
 
 # Класс для пушек
 class Cannon:
-    def __init__(self, x, y, damage, speed, color, key=None):
+    def __init__(self, x, y, damage, speed, color):
         self.x = x
         self.y = y
         self.damage = damage
         self.speed = speed
         self.color = color
-        self.key = key
         self.cooldown = 0
-        self.level = 1
 
 # Класс для ядер
 class Projectile:
@@ -59,53 +57,53 @@ class Projectile:
         self.color = color
 
 # Инициализация игры
-towers = [{"x": 50, "hp": 100}, {"x": 250, "hp": 100}]  # Уменьшены координаты для нового размера
+towers = [{"x": 100, "hp": 100}, {"x": 500, "hp": 100}]
 gold = [0, 0]
 score = 0
 projectiles = []
 cannons = [
-    [Cannon(50, 150, 5, 2, "red", "1"), Cannon(50, 120, 10, 1, "orange", "2"), Cannon(50, 90, 15, 0.5, "yellow", "3")],
-    [Cannon(250, 150, 5, -2, "blue"), Cannon(250, 120, 10, -1, "cyan"), Cannon(250, 90, 15, -0.5, "purple")]
+    [Cannon(100, 300, 1, 2, "darkgreen")],  # Игрок: 1 пушка
+    [Cannon(500, 300, 1, -2, "darkred")]    # ИИ: 1 пушка
 ]
 game_over = False
 ai_shoot_timer = 0
-ai_upgrade_timer = 0
+ai_action_timer = 0
+gold_timer = 0
 
-# Кнопки (перемещены ниже канваса)
+# Сенсорные кнопки
 buttons = [
-    {"x": 10, "y": 220, "w": 50, "h": 40, "action": "shoot_0", "label": "C1"},
-    {"x": 70, "y": 220, "w": 50, "h": 40, "action": "shoot_1", "label": "C2"},
-    {"x": 130, "y": 220, "w": 50, "h": 40, "action": "shoot_2", "label": "C3"},
-    {"x": 190, "y": 220, "w": 50, "h": 40, "action": "upgrade_0", "label": "U1"},
-    {"x": 250, "y": 220, "w": 50, "h": 40, "action": "upgrade_1", "label": "U2"}
+    {"x": 50, "y": 420, "w": 80, "h": 60, "action": "shoot", "label": "C"},
+    {"x": 150, "y": 420, "w": 80, "h": 60, "action": "heal", "label": "H"},
+    {"x": 250, "y": 420, "w": 80, "h": 60, "action": "buy_cannon", "label": "P"},
+    {"x": 350, "y": 420, "w": 80, "h": 60, "action": "upgrade", "label": "U"}
 ]
 
 # Отрисовка
 def draw():
-    global game_over, ai_shoot_timer, ai_upgrade_timer, score
+    global game_over, ai_shoot_timer, ai_action_timer, gold_timer, score
     if game_over:
         ctx.fillStyle = "black"
-        ctx.font = "20px Arial"
+        ctx.font = "30px Arial"
         winner = "Player" if towers[1]["hp"] <= 0 else "AI"
-        ctx.fillText(f"Game Over! {winner} wins!", 50, 100)
-        ctx.fillText(f"Score: {score}", 100, 130)
+        ctx.fillText(f"Game Over! {winner} wins!", 150, 200)
+        ctx.fillText(f"Score: {score}", 250, 250)
         return
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     # Башни
     for i, tower in enumerate(towers):
-        ctx.fillStyle = "gray" if i == 0 else "darkgray"
-        ctx.fillRect(tower["x"] - 15, 50, 30, 100)  # Уменьшены размеры башен
+        ctx.fillStyle = "green" if i == 0 else "red"
+        ctx.fillRect(tower["x"] - 20, 100, 40, 200)
         ctx.fillStyle = "black"
-        ctx.font = "12px Arial"
-        ctx.fillText(f"HP: {tower['hp']}", tower["x"] - 10, 40)
+        ctx.font = "16px Arial"
+        ctx.fillText(f"HP: {tower['hp']}", tower["x"] - 15, 90)
 
     # Пушки
     for player_cannons in cannons:
         for cannon in player_cannons:
             ctx.fillStyle = cannon.color
-            ctx.fillRect(cannon.x - 8, cannon.y - 8, 16, 16)
+            ctx.fillRect(cannon.x - 10, cannon.y - 10, 20, 20)
             if cannon.cooldown > 0:
                 cannon.cooldown -= 1
 
@@ -113,9 +111,9 @@ def draw():
     for proj in projectiles[:]:
         proj.x += proj.dx
         ctx.fillStyle = proj.color
-        ctx.fillRect(proj.x - 4, proj.y - 4, 8, 8)
+        ctx.fillRect(proj.x - 5, proj.y - 5, 10, 10)
         target = towers[1] if proj.dx > 0 else towers[0]
-        if abs(proj.x - target["x"]) < 15 and abs(proj.y - 50) < 50:
+        if abs(proj.x - target["x"]) < 20 and abs(proj.y - 100) < 100:
             target["hp"] -= proj.damage
             if proj.dx > 0:
                 score += proj.damage
@@ -127,15 +125,20 @@ def draw():
 
     # Кнопки
     for btn in buttons:
-        ctx.fillStyle = "lightblue" if btn["action"].startswith("shoot") else "lightgreen"
+        ctx.fillStyle = "lightblue" if btn["action"] in ["shoot", "buy_cannon"] else "lightgreen"
         ctx.fillRect(btn["x"], btn["y"], btn["w"], btn["h"])
         ctx.fillStyle = "black"
-        ctx.font = "16px Arial"
-        ctx.fillText(btn["label"], btn["x"] + 10, btn["y"] + 25)
+        ctx.font = "20px Arial"
+        ctx.fillText(btn["label"], btn["x"] + 25, btn["y"] + 40)
+
+    # Золото (2 единицы в секунду, обновление каждые 20 кадров = 1 сек при 50 мс)
+    gold_timer += 1
+    if gold_timer >= 20:
+        gold[0] += 2
+        gold[1] += 2
+        gold_timer = 0
 
     # Обновление интерфейса
-    gold[0] += 1
-    gold[1] += 1
     document["gold1"].text = str(gold[0])
     document["gold2"].text = str(gold[1])
     document["hp1"].text = str(towers[0]["hp"])
@@ -144,20 +147,25 @@ def draw():
 
     # ИИ
     ai_shoot_timer += 1
-    if ai_shoot_timer >= 40:
+    if ai_shoot_timer >= 60:  # Стреляет раз в 3 секунды (60 кадров при 50 мс)
         cannon = random.choice(cannons[1])
         if cannon.cooldown == 0:
             projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed, cannon.damage, cannon.color))
-            cannon.cooldown = 30
+            cannon.cooldown = 60
         ai_shoot_timer = 0
 
-    ai_upgrade_timer += 1
-    if ai_upgrade_timer >= 150 and gold[1] >= 50:
-        cannon = random.choice(cannons[1])
-        cannon.damage += 2
-        cannon.level += 1
-        gold[1] -= 50
-        ai_upgrade_timer = 0
+    ai_action_timer += 1
+    if ai_action_timer >= 100 and gold[1] >= 100:  # ИИ тратит золото
+        if random.random() < 0.5 and len(cannons[1]) < 4:
+            costs = [100, 200, 300]
+            cost = costs[len(cannons[1]) - 1] if len(cannons[1]) < 3 else 300
+            if gold[1] >= cost:
+                cannons[1].append(Cannon(500, 300 - len(cannons[1]) * 50, 1, -2, "darkred"))
+                gold[1] -= cost
+        elif gold[1] >= 100:
+            towers[1]["hp"] += 50
+            gold[1] -= 100
+        ai_action_timer = 0
 
 # Управление
 def touchstart(evt):
@@ -166,36 +174,26 @@ def touchstart(evt):
     x, y = touch.clientX - canvas.offsetLeft, touch.clientY - canvas.offsetTop
     for btn in buttons:
         if (btn["x"] <= x <= btn["x"] + btn["w"] and btn["y"] <= y <= btn["y"] + btn["h"]):
-            if btn["action"].startswith("shoot"):
-                idx = int(btn["action"].split("_")[1])
-                cannon = cannons[0][idx]
-                if cannon.cooldown == 0:
-                    projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed, cannon.damage, cannon.color))
-                    cannon.cooldown = 30
-            elif btn["action"].startswith("upgrade"):
-                idx = int(btn["action"].split("_")[1])
-                if gold[0] >= 50:
-                    cannons[0][idx].damage += 2
-                    cannons[0][idx].level += 1
-                    gold[0] -= 50
-
-def keydown(evt):
-    key = evt.key
-    for cannon in cannons[0]:
-        if key == cannon.key and cannon.cooldown == 0:
-            projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed, cannon.damage, cannon.color))
-            cannon.cooldown = 30
-    if key == "q" and gold[0] >= 50:
-        cannons[0][0].damage += 2
-        cannons[0][0].level += 1
-        gold[0] -= 50
-    elif key == "e" and gold[0] >= 50:
-        cannons[0][1].damage += 2
-        cannons[0][1].level += 1
-        gold[0] -= 50
+            if btn["action"] == "shoot":
+                for cannon in cannons[0]:
+                    if cannon.cooldown == 0:
+                        projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed, cannon.damage, cannon.color))
+                        cannon.cooldown = 60  # 3 секунды (60 кадров при 50 мс)
+            elif btn["action"] == "heal" and gold[0] >= 100:
+                towers[0]["hp"] += 50
+                gold[0] -= 100
+            elif btn["action"] == "buy_cannon" and len(cannons[0]) < 4:
+                costs = [100, 200, 300]
+                cost = costs[len(cannons[0]) - 1] if len(cannons[0]) < 3 else 300
+                if gold[0] >= cost:
+                    cannons[0].append(Cannon(100, 300 - len(cannons[0]) * 50, 1, 2, "darkgreen"))
+                    gold[0] -= cost
+            elif btn["action"] == "upgrade" and gold[0] >= 150:
+                for cannon in cannons[0]:
+                    cannon.damage += 1
+                gold[0] -= 150
 
 canvas.bind("touchstart", touchstart)
-document.bind("keydown", keydown)
 
 timer.set_interval(draw, 50)
     </script>
