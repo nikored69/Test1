@@ -55,22 +55,6 @@ import math
 canvas = document["gameCanvas"]
 ctx = canvas.getContext("2d")
 
-# Загрузка текстур
-textures = {}
-def load_texture(name, url):
-    img = window.Image.new()
-    img.src = url
-    img.onload = lambda: None  # Просто чтобы подождать загрузки
-    textures[name] = img
-
-load_texture("background", "https://i.imgur.com/5zZxX9P.jpg")  # Пустыня
-load_texture("tower_player", "https://i.imgur.com/8kXjZ7r.png")  # Каменная башня (зелёная)
-load_texture("tower_ai", "https://i.imgur.com/8kXjZ7r.png")  # Каменная башня (красная)
-load_texture("cannon", "https://i.imgur.com/1XjK9qP.png")  # Металлическая пушка
-load_texture("projectile", "https://i.imgur.com/3XjK9qP.png")  # Каменный шар
-load_texture("house", "https://i.imgur.com/9XjK9qP.png")  # Деревянный домик
-load_texture("cactus", "https://i.imgur.com/7XjK9qP.png")  # Реалистичный кактус
-
 # Класс для пушек
 class Cannon:
     def __init__(self, x, y, damage, speed, color):
@@ -130,21 +114,51 @@ def draw():
             ctx.fillText(f"{i+1}. {s}", 400, 380 + i * 30)
         return
 
-    # Фон
-    if "background" in textures:
-        ctx.drawImage(textures["background"], 0, 0, canvas.width, canvas.height)
+    # Фон (пустыня с градиентом)
+    gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+    gradient.addColorStop(0, "#87CEEB")  # Небо
+    gradient.addColorStop(0.5, "#D2B48C")  # Песок
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    # Дюны
+    ctx.fillStyle = "#C19A6B"
+    ctx.beginPath()
+    ctx.moveTo(0, 500)
+    ctx.quadraticCurveTo(250, 450, 500, 500)
+    ctx.quadraticCurveTo(750, 550, 1000, 500)
+    ctx.lineTo(1000, 600)
+    ctx.lineTo(0, 600)
+    ctx.fill()
 
     # Кактусы
-    if "cactus" in textures:
-        ctx.drawImage(textures["cactus"], 200, 400, 40, 80)
-        ctx.drawImage(textures["cactus"], 300, 450, 40, 80)
-        ctx.drawImage(textures["cactus"], 700, 420, 40, 80)
+    for x in [200, 300, 700]:
+        ctx.fillStyle = "#355E3B"  # Основа
+        ctx.fillRect(x, 400, 20, 100)
+        ctx.fillRect(x + 10, 400, 20, 20)  # Рука
+        ctx.fillRect(x - 10, 420, 20, 20)
+        ctx.fillStyle = "#4A704A"  # Колючки
+        for y in range(400, 500, 10):
+            ctx.fillRect(x + 5, y, 5, 2)
+            ctx.fillRect(x + 15, y + 5, 5, 2)
 
     # Башни
     for i, tower in enumerate(towers):
-        texture = "tower_player" if i == 0 else "tower_ai"
-        if texture in textures:
-            ctx.drawImage(textures[texture], tower["x"] - tower["width"] // 2, 50, tower["width"], tower["height"])
+        # Основа
+        ctx.fillStyle = "#8B4513" if i == 0 else "#A52A2A"
+        ctx.fillRect(tower["x"] - tower["width"] // 2, 50, tower["width"], tower["height"])
+        # Кирпичи
+        ctx.fillStyle = "#D2691E"
+        for y in range(50, 230, 20):
+            for x in range(tower["x"] - tower["width"] // 2 + 5, tower["x"] + tower["width"] // 2 - 5, 15):
+                ctx.fillRect(x, y, 10, 15)
+        # Зубцы
+        ctx.fillStyle = "#666633"
+        for x in range(tower["x"] - tower["width"] // 2, tower["x"] + tower["width"] // 2, 15):
+            ctx.fillRect(x, 50, 10, 10)
+        # Окна
+        ctx.fillStyle = "#FFD700"
+        ctx.fillRect(tower["x"] - 15, 80, 30, 20)
+        ctx.fillRect(tower["x"] - 15, 120, 30, 20)
         ctx.fillStyle = "white"
         ctx.font = "20px Arial"
         ctx.fillText(f"Ж: {tower['hp']}", tower["x"] - 20, 40)
@@ -152,13 +166,19 @@ def draw():
     # Пушки
     for i, player_cannons in enumerate(cannons):
         for cannon in player_cannons:
-            if "cannon" in textures:
-                ctx.save()
-                ctx.translate(cannon.x, cannon.y)
-                if i == 1:  # Поворот для ИИ
-                    ctx.scale(-1, 1)
-                ctx.drawImage(textures["cannon"], -20, -20, 40, 40)
-                ctx.restore()
+            # Корпус
+            ctx.fillStyle = "#4A2C2A"
+            ctx.beginPath()
+            ctx.arc(cannon.x, cannon.y, 15, 0, 2 * math.pi)
+            ctx.fill()
+            # Блик
+            ctx.fillStyle = "#666633"
+            ctx.beginPath()
+            ctx.arc(cannon.x - 5, cannon.y - 5, 5, 0, 2 * math.pi)
+            ctx.fill()
+            # Дуло
+            ctx.fillStyle = "#333333"
+            ctx.fillRect(cannon.x, cannon.y - 25, 10, 25) if i == 0 else ctx.fillRect(cannon.x - 10, cannon.y - 25, 10, 25)
             cannon.cooldown += 1
             if cannon.cooldown >= 60:
                 projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed * speed_multiplier[i], cannon.damage, cannon.color))
@@ -167,8 +187,19 @@ def draw():
     # Ядра
     for proj in projectiles[:]:
         proj.x += proj.dx
-        if "projectile" in textures:
-            ctx.drawImage(textures["projectile"], proj.x - 5, proj.y - 5, 10, 10)
+        # Тень
+        ctx.fillStyle = "#333333"
+        ctx.beginPath()
+        ctx.arc(proj.x + 3, proj.y + 3, 5, 0, 2 * math.pi)
+        ctx.fill()
+        # Ядро
+        ctx.fillStyle = "#555555"
+        ctx.beginPath()
+        ctx.arc(proj.x, proj.y, 5, 0, 2 * math.pi)
+        ctx.fill()
+        # Текстура
+        ctx.fillStyle = "#777777"
+        ctx.fillRect(proj.x - 2, proj.y - 2, 4, 4)
         target = towers[1] if proj.dx > 0 else towers[0]
         if (target["x"] - target["width"] // 2 <= proj.x <= target["x"] + target["width"] // 2 and
             50 <= proj.y <= 50 + target["height"]):
@@ -184,8 +215,25 @@ def draw():
     # Домики
     for i, house_list in enumerate(houses):
         for house in house_list:
-            if "house" in textures:
-                ctx.drawImage(textures["house"], house.x - 25, house.y - 25, 50, 50)
+            # Основа
+            ctx.fillStyle = "#8B5A2B"
+            ctx.fillRect(house.x - 25, house.y, 50, 35)
+            # Крыша
+            ctx.fillStyle = "#A52A2A"
+            ctx.beginPath()
+            ctx.moveTo(house.x - 30, house.y)
+            ctx.lineTo(house.x, house.y - 30)
+            ctx.lineTo(house.x + 30, house.y)
+            ctx.fill()
+            # Окно
+            ctx.fillStyle = "#FFD700"
+            ctx.fillRect(house.x - 15, house.y + 5, 10, 15)
+            # Дверь
+            ctx.fillStyle = "#5C4033"
+            ctx.fillRect(house.x + 5, house.y + 5, 15, 30)
+            # Дымоход
+            ctx.fillStyle = "#333333"
+            ctx.fillRect(house.x + 15, house.y - 25, 10, 20)
 
     # Золото
     gold_timer += 1
