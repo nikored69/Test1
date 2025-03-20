@@ -154,4 +154,50 @@ def draw():
     ai_upgrade_timer += 1
     if ai_upgrade_timer >= 150 and gold[1] >= 50:
         cannon = random.choice(cannons[1])
-        cannon.damage += 
+        cannon.damage += 2
+        cannon.level += 1
+        gold[1] -= 50
+        ai_upgrade_timer = 0
+
+# Управление
+def touchstart(evt):
+    evt.preventDefault()
+    touch = evt.touches[0]
+    x, y = touch.clientX - canvas.offsetLeft, touch.clientY - canvas.offsetTop
+    for btn in buttons:
+        if (btn["x"] <= x <= btn["x"] + btn["w"] and btn["y"] <= y <= btn["y"] + btn["h"]):
+            if btn["action"].startswith("shoot"):
+                idx = int(btn["action"].split("_")[1])
+                cannon = cannons[0][idx]
+                if cannon.cooldown == 0:
+                    projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed, cannon.damage, cannon.color))
+                    cannon.cooldown = 30
+            elif btn["action"].startswith("upgrade"):
+                idx = int(btn["action"].split("_")[1])
+                if gold[0] >= 50:
+                    cannons[0][idx].damage += 2
+                    cannons[0][idx].level += 1
+                    gold[0] -= 50
+
+def keydown(evt):
+    key = evt.key
+    for cannon in cannons[0]:
+        if key == cannon.key and cannon.cooldown == 0:
+            projectiles.append(Projectile(cannon.x, cannon.y, cannon.speed, cannon.damage, cannon.color))
+            cannon.cooldown = 30
+    if key == "q" and gold[0] >= 50:
+        cannons[0][0].damage += 2
+        cannons[0][0].level += 1
+        gold[0] -= 50
+    elif key == "e" and gold[0] >= 50:
+        cannons[0][1].damage += 2
+        cannons[0][1].level += 1
+        gold[0] -= 50
+
+canvas.bind("touchstart", touchstart)
+document.bind("keydown", keydown)
+
+timer.set_interval(draw, 50)
+    </script>
+</body>
+</html>
