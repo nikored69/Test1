@@ -141,6 +141,14 @@ def draw():
             ctx.fillRect(x + 5, y, 5, 2)
             ctx.fillRect(x + 15, y + 5, 5, 2)
 
+    # Земля под башнями
+    for tower in towers:
+        ctx.fillStyle = "#C19A6B"  # Песок
+        ctx.fillRect(tower["x"] - tower["width"] // 2 - 20, 230, tower["width"] + 40, 20)
+        # Тень
+        ctx.fillStyle = "rgba(0, 0, 0, 0.3)"
+        ctx.fillRect(tower["x"] - tower["width"] // 2 - 20, 250, tower["width"] + 40, 10)
+
     # Башни
     for i, tower in enumerate(towers):
         # Основа
@@ -249,8 +257,8 @@ def draw():
     document["hp2"].text = str(towers[1]["hp"])
     document["score1"].text = str(score)
 
-    # ИИ
-    if gold[1] >= 100 and random.random() < 0.03:
+    # ИИ (сложность увеличена на 5%)
+    if gold[1] >= 100 and random.random() < 0.0315:  # Было 0.03, теперь 0.0315
         action = random.random()
         if action < 0.3 and len(cannons[1]) < 4 and gold[1] >= 125:
             cannons[1].append(Cannon(900, 220 - len(cannons[1]) * 30, 1, -3, "#4A2C2A"))
