@@ -17,6 +17,13 @@
             text-align: center;
             margin-top: 10px;
         }
+        button {
+            width: 100px;
+            height: 80px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/brython@3.11.0/brython_stdlib.js"></script>
@@ -28,13 +35,14 @@
         <p>ИИ: Золото: <span id="gold2">0</span> | Жизни: <span id="hp2">100</span></p>
     </div>
     <div id="controls">
-        <button style="width: 100px; height: 80px; margin: 5px;" id="heal">❤️<br>Лечение</button>
-        <button style="width: 100px; height: 80px; margin: 5px;" id="buy_cannon">🔫<br>Пушка</button>
-        <button style="width: 100px; height: 80px; margin: 5px;" id="upgrade">⬆️⬆️<br>Улучшение</button>
+        <button id="heal">❤️<br>Лечение</button>
+        <button id="buy_cannon">🔫<br>Пушка</button>
+        <button id="upgrade">⬆️⬆️<br>Улучшение</button>
     </div>
     <script type="text/python">
-from browser import document, window, timer
+from browser import document, window, timer, html
 import random
+import math
 
 canvas = document["gameCanvas"]
 ctx = canvas.getContext("2d")
@@ -97,7 +105,7 @@ def draw():
         for cannon in player_cannons:
             ctx.fillStyle = cannon.color
             ctx.beginPath()
-            ctx.arc(cannon.x, cannon.y, 10, 0, 2 * Math.PI)
+            ctx.arc(cannon.x, cannon.y, 10, 0, 2 * math.pi)
             ctx.fill()
             cannon.cooldown += 1
             if cannon.cooldown >= 60:  # 3 секунды (60 кадров при 50 мс)
@@ -109,7 +117,7 @@ def draw():
         proj.x += proj.dx
         ctx.fillStyle = proj.color
         ctx.beginPath()
-        ctx.arc(proj.x, proj.y, 5, 0, 2 * Math.PI)
+        ctx.arc(proj.x, proj.y, 5, 0, 2 * math.pi)
         ctx.fill()
         target = towers[1] if proj.dx > 0 else towers[0]
         if (target["x"] - target["width"] // 2 <= proj.x <= target["x"] + target["width"] // 2 and
@@ -156,6 +164,7 @@ def heal(evt):
         towers[0]["hp"] += 50
         gold[0] -= heal_cost
         heal_cost += 40
+        print(f"Лечение: новая стоимость {heal_cost}")  # Отладка
 
 def buy_cannon(evt):
     if len(cannons[0]) < 4 and not game_over:
@@ -164,17 +173,21 @@ def buy_cannon(evt):
         if gold[0] >= cost:
             cannons[0].append(Cannon(100, 200 - len(cannons[0]) * 30, 1, 3, "darkgreen"))
             gold[0] -= cost
+            print(f"Куплена пушка, осталось золота: {gold[0]}")  # Отладка
 
 def upgrade(evt):
     if gold[0] >= 150 and not game_over:
         for cannon in cannons[0]:
             cannon.damage += 1
         gold[0] -= 150
+        print(f"Улучшение, осталось золота: {gold[0]}")  # Отладка
 
+# Привязка событий
 document["heal"].bind("click", heal)
 document["buy_cannon"].bind("click", buy_cannon)
 document["upgrade"].bind("click", upgrade)
 
+# Запуск игрового цикла
 timer.set_interval(draw, 50)
     </script>
 </body>
